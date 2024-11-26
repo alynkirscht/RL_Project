@@ -85,6 +85,7 @@ obs, info = env.reset()
 for _ in range(500):  # Run for 500 timesteps
     # action = env.action_space.sample()  # Random action
     action = mppi_controller(obs)  # Compute the action using MPPI
+    import pdb; pdb.set_trace()
     obs, reward, done, truncated, info = env.step(action)  # Take a step
     env.render()  # Render the simulation
     if done or truncated:
