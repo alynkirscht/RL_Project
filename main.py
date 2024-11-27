@@ -30,6 +30,8 @@ action_low, action_high = env.action_space.low, env.action_space.high  # Action 
 # Initialize control sequence
 control_sequence = np.zeros((horizon, control_dim))
 
+import pdb; pdb.set_trace()
+
 # Define a cost function
 def cost_function(state, action, next_state):
     """
