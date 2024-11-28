@@ -14,28 +14,18 @@ from controllers.MPPI import MPPI
 
 # Visualization
 from matplotlib.animation import FuncAnimation
-# from IPython.display import HTML
 import matplotlib.pyplot as plt
 
 def main():
-    T = 100000 # 20 seconds
-    TIMECONST = 0.02
-    VIEWER = True
-    task = 'walk_octagon'
+    config = {
+        'task': 'stand',
+        'horizon': 40,
+        'n_samples': 30,
+        'temperature': 0.1
+    }
 
-    SIMULATION_STEP = 0.01 #0.002
-    CTRL_UPDATE_RATE = 100
-    CTRL_HORIZON = 40
-    CTRL_LAMBDA = 0.1
-    CTRL_N_SAMPLES = 30
-
-    task_data = get_task(task)
-    sim_path = task_data["sim_path"]
-
-    path = "models/go1/"
-    model_path = "go1_scene_mppi.xml"
-
-    model_sim = mujoco.MjModel.from_xml_path(path+model_path)
+    model_path = './models/go1/go1_scene_mppi.xml'
+    model_sim = mujoco.MjModel.from_xml_path(model_path)
     dt_sim = 0.01
     model_sim.opt.timestep = dt_sim
     data_sim = mujoco.MjData(model_sim)
@@ -43,25 +33,53 @@ def main():
 
     mujoco.mj_resetDataKeyframe(model_sim, data_sim, 0) # stand position
     mujoco.mj_forward(model_sim, data_sim)
-    q_init = cp.deepcopy(data_sim.qpos) # save reference pose
-    v_init = cp.deepcopy(data_sim.qvel) # save reference pose
-    print("Configuration: {}".format(q_init)) # save reference pose
+    q_init = cp.deepcopy(data_sim.qpos) # initial pos from sim
+    v_init = cp.deepcopy(data_sim.qvel) # initial vel from sim
 
     img = viewer.read_pixels()
     plt.imshow(img)
+    plt.show()
 
     controller = MPPI(config, model_sim, data_sim)
-    controller.internal_ref = True
-    controller.reset_planner()
 
-    agent = MPPI(task=task)
-    agent.set_params(horizon=CTRL_HORIZON, lambda_=CTRL_LAMBDA, N=CTRL_N_SAMPLES)
-    simulator = Simulator(agent=agent, viewer=VIEWER, T=T, dt=SIMULATION_STEP, timeconst=TIMECONST,
-                          model_path=sim_path, ctrl_rate=CTRL_UPDATE_RATE)
-    
-    simulator.run()
-    simulator.plot_trajectory()
-    pass
+    # Run simulation
+    anim_imgs = []
+    sim_inputs = []
+    x_states = []
+
+    tfinal = 8 # 14 for stairs, 30 for walk_octagon
+    tvec = np.linspace(0,tfinal,int(np.ceil(tfinal/dt_sim))+1)
+
+    for ticks, ti in enumerate(tvec):
+        q_curr = cp.deepcopy(data_sim.qpos) # save reference pose
+        v_curr = cp.deepcopy(data_sim.qvel) # save reference pose
+        x = np.concatenate([q_curr, v_curr])
+        
+        if ticks%1 == 0:
+            u_joints = controller.update(model_sim, data_sim)  
+            
+        data_sim.ctrl[:] = u_joints
+        mujoco.mj_step(model_sim, data_sim)
+        mujoco.mj_forward(model_sim, data_sim)
+
+        error = np.linalg.norm(np.array(controller.body_ref[:3]) - np.array(data_sim.qpos[:3]))
+
+        viewer.add_marker(
+            pos=controller.body_ref[:3]*1,         # Position of the marker
+            size=[0.15, 0.15, 0.15],     # Size of the sphere
+            rgba=[1, 0, 1, 1],           # Color of the sphere (red)
+            type=mujoco.mjtGeom.mjGEOM_SPHERE, # Specify that this is a sphere
+            label=""
+        )
+
+        if error < controller.goal_thresh[controller.goal_index]:
+            controller.next_goal()
+        
+        img = viewer.read_pixels()
+        if ticks % 2 == 0:
+            anim_imgs.append(img)
+        sim_inputs.append(u_joints)
+        x_states.append(x)
 
 if __name__ == "__main__":
     main()
