@@ -3,15 +3,15 @@
 
 # 1. Create Conda Environment
 
-  ```conda create --name mppi python=3.9 -y``` 
+    conda create --name mppi python=3.9 -y
   
 On Windows
 
-  ```conda activate mppi``` 
+    conda activate mppi
 
 On Linux 
 
-  ```source activate mppi``` 
+    source activate mppi
 
 # 2 Install Requirements 
 
