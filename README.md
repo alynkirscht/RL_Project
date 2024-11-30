@@ -19,3 +19,6 @@ In the correct directory
 
     pip install --user -r requirements.txt
     pip install -e .
+# 3 Run Simulation
+
+    python mppi_sim.py
