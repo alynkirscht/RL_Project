@@ -1,4 +1,7 @@
 absl-py==2.1.0
+numpy==1.25.2
+# numpy==1.21.2
+mujoco==2.2.1
 asttokens==2.4.1
 astunparse==1.6.3
 backcall==0.2.0
