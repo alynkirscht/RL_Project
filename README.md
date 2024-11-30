@@ -19,6 +19,8 @@ In the correct directory
 
     pip install --user -r requirements.txt
 
+## Download mujoco_menagerie on local manually
+
 # 3 Run Simulation
 
     python mppi_sim.py
